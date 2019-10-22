@@ -24,11 +24,7 @@ public:
 				string cardName = msg.substr(startPos + 1, endPos - startPos - 1);
 				string cardImage = findCard(cardName);
 				std::cout << cardImage << std::endl;
-				json embed;
-				embed = {
-					{"image", cardImage}
-				};
-				sendMessage(message.channelID, embed);
+				sendMessage(message.channelID, cardImage);
 			}
 		}
 	}
