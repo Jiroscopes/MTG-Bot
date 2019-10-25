@@ -5,6 +5,8 @@
 #include <cpr/cpr.h>
 #include "deps/sleepy-discord/include/sleepy_discord/websocketpp_websocket.h"
 #include "deps/json/single_include/nlohmann/json.hpp"
+#include "mtgbot.h"
+
 using json = nlohmann::json;
 using namespace std;
 
@@ -22,16 +24,24 @@ public:
 			std::size_t endPos;
 			if ((endPos = msg.find("]")) != string::npos && endPos != startPos + 1) {
 				string cardName = msg.substr(startPos + 1, endPos - startPos - 1);
-				string cardImage = findCard(cardName);
-				std::cout << cardImage << std::endl;
-				sendMessage(message.channelID, cardImage);
+				auto cardImage = findCard(cardName);
+				//std::cout << cardImage << std::endl;
+				//sendMessage(message.channelID, cardImage);
+				SleepyDiscord::Embed embed;
+				embed.title = "Title";
+				embed.description = "Description";
+				embed.url = "https://somewhere.someplace";
+				embed.footer.text = "Footer Text";
+				embed.image.url = cardImage;
+				sendMessage(message.channelID, "", embed);
+
 			}
 		}
 	}
 
 	string findCard(string cardName) {
 		auto r = cpr::Get(cpr::Url{ "https://api.scryfall.com/cards/named" },
-			cpr::Parameters{ { "exact", cardName } });
+			cpr::Parameters{ { "fuzzy", cardName } }); //fuzzy allows non-exact searches
 		r.status_code;                  // 200
 		r.header["content-type"];       // application/json; charset=utf-8
 	
@@ -46,12 +56,13 @@ public:
 		imageLink.erase(std::remove(imageLink.begin(), imageLink.end(), '\"'), imageLink.end());
 		return imageLink;
 	}
+
+	void constructEmbed(string rawJSON) {
+
+	}
 };
 
 int main() {
 	MyClientClass client("NjM0MTg4NzczMDc2MjM4MzU4.XayN_w.mvyN5REvXXWrwqL8VtEnoGjGh0k", 2);
 	client.run();
-
-
-
 }
