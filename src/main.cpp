@@ -1,13 +1,6 @@
-
-#include <iostream>
-#include <algorithm>
-#include <string>
-#include <cpr/cpr.h>
-#include "deps/sleepy-discord/include/sleepy_discord/websocketpp_websocket.h"
-#include "deps/json/single_include/nlohmann/json.hpp"
 #include "mtgbot.h"
 
-using json = nlohmann::json;
+using namespace rapidjson;
 using namespace std;
 
 class MyClientClass : public SleepyDiscord::DiscordClient {
@@ -23,42 +16,51 @@ public:
 		if ((startPos = msg.find("[")) != string::npos) {
 			std::size_t endPos;
 			if ((endPos = msg.find("]")) != string::npos && endPos != startPos + 1) {
+
 				string cardName = msg.substr(startPos + 1, endPos - startPos - 1);
+				//string* namePtr = &cardName; // namePtr = address of cardName; *namePtr = value
 				auto cardImage = findCard(cardName);
-				//std::cout << cardImage << std::endl;
-				//sendMessage(message.channelID, cardImage);
+				// build Embed
 				SleepyDiscord::Embed embed;
-				embed.title = "Title";
+				embed.title = cardName;
 				embed.description = "Description";
 				embed.url = "https://somewhere.someplace";
 				embed.footer.text = "Footer Text";
 				embed.image.url = cardImage;
+				// Send
 				sendMessage(message.channelID, "", embed);
 
 			}
 		}
 	}
-
-	string findCard(string cardName) {
+	/* TO DO: findCard makes a request for the card information, then passes the data back.
+		Card Information:
+			-Name
+			-Link to tcgplayer
+			-Link to edhrec
+	*/
+	string findCard(string& cardName) {
 		auto r = cpr::Get(cpr::Url{ "https://api.scryfall.com/cards/named" },
 			cpr::Parameters{ { "fuzzy", cardName } }); //fuzzy allows non-exact searches
 		r.status_code;                  // 200
 		r.header["content-type"];       // application/json; charset=utf-8
-	
-		return extractImage(r.text);;
+		
+		return extractImage(r.text);
 	}
 
 	string extractImage(string data) {
-		json j_string = data;
-
-		json parsed = json::parse(data);
-		string imageLink = parsed["image_uris"]["large"].dump();
-		imageLink.erase(std::remove(imageLink.begin(), imageLink.end(), '\"'), imageLink.end());
-		return imageLink;
-	}
-
-	void constructEmbed(string rawJSON) {
-
+		const char* bruh = data.c_str();
+		Document incomingData;
+		incomingData.Parse(bruh);
+		// FindMember performs HasMember() and returns a pointer to the value if found
+		auto imageURI = incomingData.FindMember("image_uris");
+		if (imageURI != incomingData.MemberEnd()) {
+			auto imageURL = incomingData["image_uris"].FindMember("large");
+			if (imageURL != incomingData.MemberEnd()) {
+				return imageURL->value.GetString(); // the arrow accesses a struct through a pointer?
+			}
+		}
+		return  "Fail";
 	}
 };
 
