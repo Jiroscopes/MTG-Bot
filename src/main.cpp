@@ -21,14 +21,17 @@ public:
 				//string* namePtr = &cardName; // namePtr = address of cardName; *namePtr = value
 				auto cardImage = findCard(cardName);
 				// build Embed
-				SleepyDiscord::Embed embed;
-				embed.title = cardName;
-				embed.description = "Description";
-				embed.url = "https://somewhere.someplace";
-				embed.footer.text = "Footer Text";
-				embed.image.url = cardImage;
+				//SleepyDiscord::Embed embed;
+				//embed.title = cardName;
+				//embed.description = "Description";
+				//embed.url = "https://somewhere.someplace";
+				//embed.footer.text = "Footer Text";
+				//embed.image.url = cardImage;
+				string arr[4] = {"image_uris", "cmc", "related_uris", "purchase_uris"};
+				findInfo(arr, 4, cardImage);
+
 				// Send
-				sendMessage(message.channelID, "", embed);
+				//sendMessage(message.channelID, "", embed);
 
 			}
 		}
@@ -39,28 +42,76 @@ public:
 			-Link to tcgplayer
 			-Link to edhrec
 	*/
-	string findCard(string& cardName) {
+
+	// returns the card information
+	Document findCard(string& cardName) {
 		auto r = cpr::Get(cpr::Url{ "https://api.scryfall.com/cards/named" },
 			cpr::Parameters{ { "fuzzy", cardName } }); //fuzzy allows non-exact searches
 		r.status_code;                  // 200
 		r.header["content-type"];       // application/json; charset=utf-8
 		
-		return extractImage(r.text);
+		return parseCard(r.text);
 	}
 
-	string extractImage(string data) {
-		const char* bruh = data.c_str();
+	// Parses JSON string and returns the object(Document)
+	Document parseCard(string& rawJSON) {
+		const char* bruh = rawJSON.c_str();
 		Document incomingData;
 		incomingData.Parse(bruh);
+
+		return incomingData;
+	}
+
+	string extractImage(Document& card) {
 		// FindMember performs HasMember() and returns a pointer to the value if found
-		auto imageURI = incomingData.FindMember("image_uris");
-		if (imageURI != incomingData.MemberEnd()) {
-			auto imageURL = incomingData["image_uris"].FindMember("large");
-			if (imageURL != incomingData.MemberEnd()) {
+		auto imageURI = card.FindMember("image_uris");
+
+		if (imageURI != card.MemberEnd()) {
+			auto imageURL = card["image_uris"].FindMember("large");
+			if (imageURL != card.MemberEnd()) {
 				return imageURL->value.GetString(); // the arrow accesses a struct through a pointer?
 			}
 		}
-		return  "Fail";
+		return  "No card found";
+	}
+
+	// take in array of info that you want, and return a ready embed
+	void findInfo(string infoArr[], int length, Document& cardJSON) {
+		string returnedInfo[4];
+		for (int i = 0; i < length; i++) {
+			// convert the string to const char* for the rapidJSON features
+			const char* propName = infoArr[i].c_str(); // "image_uris", "cmc", "related_uris", "purchase_uris"
+			auto findProp = cardJSON.FindMember(propName);
+			if (findProp != cardJSON.MemberEnd()) {
+				// if it is the image
+				if (strcmp(propName, "image_uris") == 0) {
+					// if has large
+					auto imageURL = cardJSON[propName].FindMember("large");
+					if (imageURL != cardJSON.MemberEnd()) {
+						returnedInfo[i] = imageURL->value.GetString();
+						cout << returnedInfo[i] << endl;
+						continue;
+					}
+					else {
+						cout << "no image" << endl;
+					}
+				}
+				else {
+					cout << propName << endl;
+				}
+
+				
+				// if it is the related_uris
+				//if () {
+
+				//}
+				// if it is the purchase_uris
+				//if () {
+
+				//}
+				// elsek
+			}
+		}
 	}
 };
 
