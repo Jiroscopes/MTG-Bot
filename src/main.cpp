@@ -20,19 +20,20 @@ public:
 				string cardName = msg.substr(startPos + 1, endPos - startPos - 1);
 				//string* namePtr = &cardName; // namePtr = address of cardName; *namePtr = value
 				auto cardImage = findCard(cardName);
-				// build Embed
-				//SleepyDiscord::Embed embed;
-				//embed.title = cardName;
-				//embed.description = "Description";
-				//embed.url = "https://somewhere.someplace";
-				//embed.footer.text = "Footer Text";
-				//embed.image.url = cardImage;
 				string arr[4] = {"image_uris", "cmc", "related_uris", "purchase_uris"};
-				findInfo(arr, 4, cardImage);
+				
+				vector<string> embedArr = findInfo(arr, 4, cardImage);
+
+				// build Embed
+				SleepyDiscord::Embed embed;
+				embed.title = cardName;
+				embed.image.url = embedArr[0];
 
 				// Send
-				//sendMessage(message.channelID, "", embed);
+				sendMessage(message.channelID, "", embed);
 
+				// cleanup the array we received
+				/*delete [] embedArr;*/
 			}
 		}
 	}
@@ -76,42 +77,58 @@ public:
 	}
 
 	// take in array of info that you want, and return a ready embed
-	void findInfo(string infoArr[], int length, Document& cardJSON) {
-		string returnedInfo[4];
+	vector<string> findInfo(string infoArr[], int length, Document& cardJSON) {
+		vector<string> returnedInfo(4);
 		for (int i = 0; i < length; i++) {
 			// convert the string to const char* for the rapidJSON features
 			const char* propName = infoArr[i].c_str(); // "image_uris", "cmc", "related_uris", "purchase_uris"
+			
 			auto findProp = cardJSON.FindMember(propName);
+
 			if (findProp != cardJSON.MemberEnd()) {
-				// if it is the image
+				// if it is the image links
 				if (strcmp(propName, "image_uris") == 0) {
 					// if has large
 					auto imageURL = cardJSON[propName].FindMember("large");
 					if (imageURL != cardJSON.MemberEnd()) {
 						returnedInfo[i] = imageURL->value.GetString();
-						cout << returnedInfo[i] << endl;
+						//cout << returnedInfo[i] << endl;
 						continue;
-					}
+					} 
+					// TODO handle image failure
 					else {
 						cout << "no image" << endl;
 					}
 				}
-				else {
-					cout << propName << endl;
+				// if it has related_uris
+				if (strcmp(propName, "related_uris") == 0) {
+					//if it has edhrec
+					auto edhrecURL = cardJSON[propName].FindMember("edhrec");
+					if (edhrecURL != cardJSON.MemberEnd()) {
+						returnedInfo[i] = edhrecURL->value.GetString();
+						//cout << returnedInfo[i] << endl;
+						continue;
+					}
 				}
-
-				
-				// if it is the related_uris
-				//if () {
-
-				//}
 				// if it is the purchase_uris
-				//if () {
-
-				//}
-				// elsek
+				if (strcmp(propName, "purchase_uris") == 0) {
+					//if it has tcgplayer
+					auto tcgPlayerURL = cardJSON[propName].FindMember("tcgplayer");
+					if (tcgPlayerURL != cardJSON.MemberEnd()) {
+						returnedInfo[i] = tcgPlayerURL->value.GetString();
+						//cout << returnedInfo[i] << endl;
+						continue;
+					}
+				}
+				// else get cmc
+				//returnedInfo[i] = findProp->value.GetDouble();
+				char cmc = to_string(findProp->value.GetFloat())[0]; // data returns 3.000000, so just trim to 1 char
+				returnedInfo[i] = cmc;
+				//cout << cmc  << endl;
 			}
 		}
+
+		return returnedInfo;
 	}
 };
 
