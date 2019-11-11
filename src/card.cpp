@@ -21,7 +21,7 @@ Document card::parseCard(std::string& rawJSON)
 	const char* bruh = rawJSON.c_str();
 	Document incomingData;
 	incomingData.Parse(bruh);
-
+	
 	return incomingData;
 }
 
@@ -40,7 +40,6 @@ std::string card::extractImage(Document& card)
 	}
 	return  "No card found";
 }
-
 
 std::vector<std::string> card::findInfo(std::string infoArr[], int length, Document& cardJSON)
 {
@@ -102,4 +101,12 @@ std::vector<std::string> card::findInfo(std::string infoArr[], int length, Docum
 	}
 
 	return returnedInfo;
+}
+
+
+std::string card::getCardName(Document& card)
+{
+	std::string cardName = card.FindMember("name")->value.GetString();
+
+	return cardName;
 }

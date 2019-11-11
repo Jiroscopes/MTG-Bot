@@ -29,5 +29,7 @@ public:
 	std::string extractImage(Document& card);
 	// take in array of info that you want, and return a ready embed
 	std::vector<std::string> findInfo(std::string infoArr[], int length, Document& cardJSON);
+	//get full name of card
+	std::string getCardName(Document& card);
 };
 
